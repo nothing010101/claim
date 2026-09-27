@@ -160,7 +160,7 @@ textarea{resize:vertical;min-height:90px;line-height:1.5;}
 </head>
 <body>
 <div class="wrap">
-  <h1>Clanker Deploy Checker</h1>
+  <h1>Clanker Deploy Checker <span style="font-size:12px;color:var(--dim);font-weight:400;">build 4</span></h1>
   <p class="sub">Cari semua token yang pernah dideploy lewat Clanker oleh wallet, langsung ke halaman token buat klaim fee.</p>
 
   <div class="panel">
@@ -402,6 +402,7 @@ async function scanWallet(address, settings, onProgress){
     merged[t.address.toLowerCase()] = t;
   });
   const tokens = Object.values(merged);
+  tokens._debug = `tx-sender: ${deployTxs.length} deploy tx, ${tokensFromTx.length} token · creatorAdmin: ${tokensFromCreator.length} token`;
 
   localStorage.setItem(cacheKey, JSON.stringify(tokens));
   return tokens;
@@ -415,6 +416,13 @@ function renderWallet(address, tokens){
   head.className = 'wallet-head';
   head.innerHTML = `<span class="wallet-addr">${address}</span><span class="wallet-count">${tokens.length} token</span>`;
   block.appendChild(head);
+
+  if(tokens._debug){
+    const dbg = document.createElement('div');
+    dbg.className = 'note';
+    dbg.textContent = tokens._debug;
+    block.appendChild(dbg);
+  }
 
   if(tokens.length === 0){
     const empty = document.createElement('div');
