@@ -213,6 +213,7 @@ textarea{resize:vertical;min-height:90px;line-height:1.5;}
 
 <script>
 const DEPLOY_SELECTORS = ['0xe9119a4e', '0x13d39311'];
+const TOKEN_CREATED_TOPIC = '0x6b04d68ca5c822b9c981d731c83ecb1356b96c8596c7659d397d234856a4537b';
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const ZERO_TOPIC = '0x0000000000000000000000000000000000000000000000000000000000000';
 const ZERO_TOPIC_FIXED = '0x0000000000000000000000000000000000000000000000000000000000000'.slice(0,66);
@@ -309,12 +310,47 @@ async function getTokenMetadata(tokenAddress, alchemyKey){
 }
 
 function formatDate(unixSeconds){
+  if(!unixSeconds) return 'tanggal tidak diketahui';
   const d = new Date(parseInt(unixSeconds,10) * 1000);
   return d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
 }
 
 function shortAddr(a){
   return a.slice(0,6) + '...' + a.slice(-4);
+}
+
+async function getBlockTimestamp(blockNumber, alchemyKey){
+  const block = await alchemyRpc(alchemyKey, 'eth_getBlockByNumber', [blockNumber, false]);
+  if(!block || !block.timestamp) return null;
+  return parseInt(block.timestamp, 16);
+}
+
+async function scanByCreatorAdmin(address, alchemyKey, jeda){
+  const padded = '0x' + '000000000000000000000000' + address.slice(2).toLowerCase();
+  const logs = await alchemyRpc(alchemyKey, 'eth_getLogs', [{
+    fromBlock: '0x0',
+    toBlock: 'latest',
+    topics: [TOKEN_CREATED_TOPIC, null, padded]
+  }]);
+  await sleep(jeda);
+  if(!logs) return [];
+
+  const tokens = [];
+  for(const log of logs){
+    const tokenAddress = '0x' + log.topics[1].slice(26);
+    const meta = await getTokenMetadata(tokenAddress, alchemyKey);
+    await sleep(jeda);
+    const ts = await getBlockTimestamp(log.blockNumber, alchemyKey);
+    await sleep(jeda);
+    tokens.push({
+      address: tokenAddress,
+      name: meta.name || 'Unknown',
+      symbol: meta.symbol || '?',
+      txHash: log.transactionHash,
+      timestamp: ts
+    });
+  }
+  return tokens;
 }
 
 async function scanWallet(address, settings, onProgress){
@@ -334,16 +370,16 @@ async function scanWallet(address, settings, onProgress){
     DEPLOY_SELECTORS.some(sel => tx.input.toLowerCase().startsWith(sel))
   );
 
-  const tokens = [];
+  const tokensFromTx = [];
   for(let i=0; i<deployTxs.length; i++){
     const tx = deployTxs[i];
-    onProgress(i+1, deployTxs.length);
+    onProgress(i+1, deployTxs.length, 'tx sender');
     const tokenAddress = await getDeployedTokenFromTx(tx.hash, settings.alchemyKey);
     await sleep(settings.jeda);
     if(tokenAddress){
       const meta = await getTokenMetadata(tokenAddress, settings.alchemyKey);
       await sleep(settings.jeda);
-      tokens.push({
+      tokensFromTx.push({
         address: tokenAddress,
         name: meta.name || 'Unknown',
         symbol: meta.symbol || '?',
@@ -352,6 +388,15 @@ async function scanWallet(address, settings, onProgress){
       });
     }
   }
+
+  onProgress(0, 0, 'creatorAdmin');
+  const tokensFromCreator = await scanByCreatorAdmin(address, settings.alchemyKey, settings.jeda);
+
+  const merged = {};
+  [...tokensFromTx, ...tokensFromCreator].forEach(t => {
+    merged[t.address.toLowerCase()] = t;
+  });
+  const tokens = Object.values(merged);
 
   localStorage.setItem(cacheKey, JSON.stringify(tokens));
   return tokens;
@@ -418,8 +463,9 @@ els.scanBtn.addEventListener('click', async () => {
     els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: ${shortAddr(address)}...`;
     els.progressFill.style.width = `${Math.round((w/addresses.length)*100)}%`;
 
-    const tokens = await scanWallet(address, {etherscanKey, alchemyKey, jeda, force}, (done,total)=>{
-      if(total>0) els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek deploy tx ${done}/${total}`;
+    const tokens = await scanWallet(address, {etherscanKey, alchemyKey, jeda, force}, (done,total,tahap)=>{
+      if(tahap === 'creatorAdmin') els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek event TokenCreated (creatorAdmin)...`;
+      else if(total>0) els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek deploy tx ${done}/${total} (tx sender)`;
     });
 
     renderWallet(address, tokens);
