@@ -257,11 +257,9 @@ function decodeDeployedByUser(res){
 /* ---------- RPC ---------- */
 function rpcUrls(){
   const al = $("alchemy").value.trim();
-  if(al){
-    if(/^https?:\/\//i.test(al)) return [al];
-    return ["https://base-mainnet.g.alchemy.com/v2/"+al];
-  }
-  return PUBLIC_RPCS;
+  const list = [];
+  if(al) list.push(/^https?:\/\//i.test(al) ? al : "https://base-mainnet.g.alchemy.com/v2/"+al);
+  return list.concat(PUBLIC_RPCS);   // selalu ada fallback RPC publik
 }
 async function rpc(method, params, timeoutMs=25000){
   const urls = rpcUrls();
@@ -296,13 +294,19 @@ async function rpcBatch(calls, chunk=20, timeoutMs=40000){
         const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),timeoutMs);
         const r=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(slice),signal:ctl.signal});
         clearTimeout(to);
-        res = await r.json(); break;
+        const j = await r.json();
+        if(Array.isArray(j) && j.length===slice.length && j.every(x=>x && !x.error)){ res=j; break; }
+        lastErr = new Error((Array.isArray(j)?j:[j]).map(x=>x&&x.error&&x.error.message).filter(Boolean).join("; ")||"batch tidak didukung");
       }catch(e){ lastErr=e; }
     }
-    if(!res) throw new Error("batch RPC gagal: "+(lastErr?lastErr.message:""));
-    if(!Array.isArray(res)) res=[res];
-    const byId = {}; res.forEach(x=>byId[x.id]=x.result);
-    slice.forEach((c,ix)=>out.push(byId[ix]!==undefined ? byId[ix] : null));
+    if(res){
+      const byId = {}; res.forEach(x=>byId[x.id]=x.result);
+      slice.forEach((c,ix)=>out.push(byId[ix]!==undefined ? byId[ix] : null));
+    } else {
+      // fallback: panggil satu per satu bila endpoint tidak mendukung batch
+      for(const c of slice){ try{ out.push(await rpc(c.method, c.params, timeoutMs)); }catch(e){ out.push(null); } }
+      log("Batch RPC tidak didukung — memakai panggilan satuan.", "wa");
+    }
   }
   return out;
 }
@@ -320,18 +324,8 @@ async function scanV4Logs(){
   const al = $("alchemy").value.trim();
   const es = $("etherscan").value.trim();
   let addrs = [];
-  if(al || PUBLIC_RPCS.length){
-    // coba eth_getLogs (Alchemy mendukung rentang penuh; publik mungkin menolak)
-    try{
-      const logs = await rpc("eth_getLogs",[{
-        address: FACTORY_V4, fromBlock:"0x0", toBlock:"latest",
-        topics:[V4_TOPIC0, null, pad32(w)]
-      }], 45000);
-      addrs = logs.map(l=>"0x"+l.topics[1].slice(26));
-      log(`Clanker v4 (getLogs): ${addrs.length} token.`, "ok");
-    }catch(e){ log(`Clanker v4 getLogs gagal (${e.message}). `, "wa"); }
-  }
-  if(!addrs.length && es){
+  // 1) Etherscan V2 — tanpa batas rentang blok (paling andal)
+  if(es){
     try{
       const url = `https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}&module=logs&action=getLogs`
         + `&fromBlock=0&toBlock=latest&address=${FACTORY_V4}&topic0=${V4_TOPIC0}`
@@ -340,9 +334,16 @@ async function scanV4Logs(){
       const arr = Array.isArray(j.result)?j.result:[];
       addrs = arr.map(l=>"0x"+l.topics[1].slice(26));
       log(`Clanker v4 (Etherscan): ${addrs.length} token.`, "ok");
-    }catch(e){ log(`Clanker v4 Etherscan gagal: ${e.message}`, "wa"); }
+    }catch(e){ log("Clanker v4 Etherscan gagal: "+e.message, "wa"); }
   }
-  if(!addrs.length) log("Clanker v4: dilewati (butuh Alchemy/Etherscan untuk log).", "wa");
+  // 2) Alchemy getLogs (tier gratis dibatasi ~10 blok, biasanya gagal)
+  if(!addrs.length && al){
+    try{
+      const logs = await rpc("eth_getLogs",[{address:FACTORY_V4, fromBlock:"0x0", toBlock:"latest", topics:[V4_TOPIC0, null, pad32(w)]}], 45000);
+      if(Array.isArray(logs)){ addrs = logs.map(l=>"0x"+l.topics[1].slice(26)); log(`Clanker v4 (Alchemy): ${addrs.length} token.`, "ok"); }
+    }catch(e){ log("Clanker v4 via Alchemy dilewati (batas eth_getLogs tier gratis).", "wa"); }
+  }
+  if(!addrs.length) log("Clanker v4: tidak discan — isi Etherscan API key untuk hasil lengkap (token v4 = CBUSD1 sudah tertangkap dari Bankr API).", "wa");
   return addrs.map(a=>({address:a, source:"clanker_v4", locker:"0x63D2DfEA64b3433F4071A98665bcD7Ca14d93496", date:null, name:null, symbol:null}));
 }
 
@@ -397,7 +398,9 @@ async function scanClankerApi(){
 /* ---------- resolusi nama ---------- */
 async function resolveNames(rows){
   const need = rows.filter(r=>r.address && (!r.name || !r.symbol));
-  const uniq = [...new Set(need.map(r=>r.address.toLowerCase()))];
+  const uniqSet = {};
+  need.forEach(r=>{ uniqSet[r.address.toLowerCase()] = true; });
+  const uniq = Object.keys(uniqSet);
   if(!uniq.length) return;
   log(`Mengambil nama/simbol on-chain untuk ${uniq.length} token…`, "in");
   const calls=[];
@@ -413,11 +416,8 @@ async function resolveNames(rows){
 }
 
 /* ---------- render ---------- */
-function sourceLabel(s){
-  return {clanker_v3:"Clanker v3", clanker_v3_1:"Clanker v3.1", clanker_v4:"Clanker v4", doppler:"Doppler"}
-    .map((v,k)=>k===s?v:null).find(Boolean)
-    || ({clanker_v3:"Clanker v3", clanker_v3_1:"Clanker v3.1", clanker_v4:"Clanker v4", doppler:"Doppler"}[s] || s);
-}
+const SOURCE_LABEL = {clanker_v3:"Clanker v3", clanker_v3_1:"Clanker v3.1", clanker_v4:"Clanker v4", doppler:"Doppler"};
+function sourceLabel(s){ return SOURCE_LABEL[s] || s; }
 function sourceBadge(s){
   const cls = s==="clanker_v3"?"b-v3":s==="clanker_v3_1"?"b-v31":s==="clanker_v4"?"b-v4":"b-doppler";
   return `<span class="badge ${cls}">${sourceLabel(s)}</span>`;
@@ -506,11 +506,12 @@ async function run(){
   log(`Mulai scan untuk ${w}`, "in");
   const all=[];
   try{
-    try{ all.push(...await scanClankerRegistry(FACTORY_V3 , "clanker_v3"  , "Clanker v3"));   }catch(e){ log("Clanker v3 gagal: "+e.message,"er"); }
-    try{ all.push(...await scanClankerRegistry(FACTORY_V31, "clanker_v3_1", "Clanker v3.1")); }catch(e){ log("Clanker v3.1 gagal: "+e.message,"er"); }
-    all.push(...await scanV4Logs());
-    all.push(...await scanClankerApi());
-    all.push(...await scanBankrApi());
+    const safe = async (fn, label)=>{ try{ all.push(...await fn()); }catch(e){ log(label+" gagal: "+e.message,"er"); } };
+    await safe(()=>scanClankerRegistry(FACTORY_V3 , "clanker_v3"  , "Clanker v3"),   "Clanker v3");
+    await safe(()=>scanClankerRegistry(FACTORY_V31, "clanker_v3_1", "Clanker v3.1"), "Clanker v3.1");
+    await safe(scanV4Logs,     "Clanker v4");
+    await safe(scanClankerApi, "Clanker API");
+    await safe(scanBankrApi,   "Bankr API");
 
     // dedupe by address, prioritas sumber yang punya nama/tanggal
     const map={};
@@ -528,17 +529,18 @@ async function run(){
     DATA = Object.values(map);
     log(`Terkumpul ${DATA.length} token unik.`, "ok");
 
-    await resolveNames(DATA);
+    try{ await resolveNames(DATA); }catch(e){ log("Resolusi nama gagal: "+e.message,"wa"); }
 
     DATA.forEach(r=>{ if(!r.name) r.name="(tanpa nama)"; if(!r.symbol) r.symbol="—"; });
-    updateStats(); render();
+    try{ updateStats(); render(); }catch(e){ log("Render gagal: "+e.message,"er"); }
     const dt=((performance.now()-t0)/1000).toFixed(1);
     log(`Selesai dalam ${dt}s.`, "ok");
     $("note").innerHTML = `Total <b>${DATA.length}</b> token. Sumber: registry on-chain Clanker v3/v3.1 + event v4 + Bankr API`
       + ` (Doppler/Clanker). Kolom <b>Deploy</b> hanya terisi bila Clanker API diaktifkan.`;
   }catch(e){
     log("GAGAL: "+e.message, "er");
-    $("tbody").innerHTML=`<tr><td colspan="7" class="empty">Scan gagal — lihat log.</td></tr>`;
+    if(DATA.length){ try{ updateStats(); render(); }catch(_){} }
+    else { $("tbody").innerHTML=`<tr><td colspan="7" class="empty">Scan gagal — lihat log.</td></tr>`; }
   }finally{
     $("scanBtn").disabled=false; $("scanBtn").textContent="▶ Scan Sekarang";
   }
