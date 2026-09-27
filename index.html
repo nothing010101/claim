@@ -2,498 +2,552 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Clanker Deploy Checker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bankr Token Scanner — Base Chain</title>
 <style>
-:root{
-  --bg:#0a0a0d;
-  --panel:#131319;
-  --panel2:#1a1a22;
-  --border:#26262f;
-  --text:#e8e8ec;
-  --dim:#8a8a96;
-  --accent:#7c6cf0;
-  --accent2:#4fd1c5;
-  --danger:#e05d5d;
-  --mono:'SF Mono',Consolas,'Courier New',monospace;
-}
-*{box-sizing:border-box;}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  padding:32px 16px 80px;
-}
-.wrap{max-width:880px;margin:0 auto;}
-h1{
-  font-size:22px;
-  font-weight:600;
-  letter-spacing:-0.01em;
-  margin:0 0 4px;
-}
-.sub{color:var(--dim);font-size:14px;margin:0 0 28px;}
-.panel{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:22px;
-  margin-bottom:18px;
-}
-.panel-title{
-  font-size:13px;
-  color:var(--dim);
-  margin:0 0 16px;
-  font-weight:600;
-}
-.row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
-.field{flex:1 1 220px;}
-label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;}
-input[type=text],input[type=password],input[type=number],textarea{
-  width:100%;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:9px;
-  padding:11px 12px;
-  color:var(--text);
-  font-size:14px;
-  font-family:var(--mono);
-  outline:none;
-}
-input:focus,textarea:focus{border-color:var(--accent);}
-textarea{resize:vertical;min-height:90px;line-height:1.5;}
-.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);}
-.checkbox-row input{width:16px;height:16px;}
-.btn{
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  border-radius:9px;
-  padding:12px 20px;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-}
-.btn:disabled{opacity:0.45;cursor:not-allowed;}
-.btn.secondary{
-  background:transparent;
-  border:1px solid var(--border);
-  color:var(--dim);
-}
-.btn.secondary:hover{border-color:var(--danger);color:var(--danger);}
-.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.status{
-  font-size:13px;
-  color:var(--dim);
-  margin-top:14px;
-  min-height:18px;
-}
-.progress-bar{
-  height:4px;
-  background:var(--panel2);
-  border-radius:2px;
-  overflow:hidden;
-  margin-top:10px;
-  display:none;
-}
-.progress-fill{height:100%;background:var(--accent2);width:0%;transition:width .2s;}
-.wallet-block{margin-bottom:22px;}
-.wallet-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px 4px;
-  border-bottom:1px solid var(--border);
-  margin-bottom:12px;
-}
-.wallet-addr{font-family:var(--mono);font-size:13px;color:var(--dim);}
-.wallet-count{font-size:12px;color:var(--accent2);}
-.token-card{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:16px 18px;
-  margin-bottom:10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:16px;
-  flex-wrap:wrap;
-}
-.token-info{min-width:0;}
-.token-name{font-size:15px;font-weight:600;margin:0 0 2px;}
-.token-sym{color:var(--accent2);font-family:var(--mono);font-size:12px;}
-.token-addr{
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--dim);
-  margin-top:6px;
-  word-break:break-all;
-}
-.token-date{font-size:11px;color:var(--dim);margin-top:4px;}
-.token-actions{display:flex;gap:8px;flex-shrink:0;}
-.link-btn{
-  background:var(--panel2);
-  border:1px solid var(--border);
-  color:var(--text);
-  border-radius:8px;
-  padding:9px 14px;
-  font-size:12px;
-  text-decoration:none;
-  white-space:nowrap;
-}
-.link-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
-.link-btn:hover{border-color:var(--accent2);}
-.empty{
-  text-align:center;
-  color:var(--dim);
-  font-size:13px;
-  padding:24px;
-}
-.note{
-  font-size:12px;
-  color:var(--dim);
-  line-height:1.6;
-  margin-top:4px;
-}
+  :root{
+    --bg:#0b0f14; --panel:#121822; --panel2:#0f151d; --line:#243040;
+    --txt:#e7eef7; --dim:#8fa3b8; --acc:#4ade80; --acc2:#38bdf8; --warn:#fbbf24; --err:#f87171;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -200px,#16202c 0%,var(--bg) 60%);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 18px 70px}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:.2px}
+  h1 span{color:var(--acc)}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
+  .card{background:linear-gradient(180deg,var(--panel) 0%,var(--panel2) 100%);border:1px solid var(--line);
+        border-radius:14px;padding:16px 16px;margin-bottom:16px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:1.1px;color:var(--dim);margin:0 0 12px;font-weight:600}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-size:12px;color:var(--dim);margin-bottom:5px}
+  input,select{width:100%;background:#0a0e13;border:1px solid var(--line);color:var(--txt);border-radius:9px;
+        padding:9px 11px;font-size:13px;font-family:var(--mono);outline:none}
+  input:focus{border-color:var(--acc2);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+  input::placeholder{color:#4a5a6c}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  button{cursor:pointer;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;
+         transition:.15s;font-family:inherit}
+  .btn-main{background:linear-gradient(180deg,#22c55e,#16a34a);color:#04140a}
+  .btn-main:hover{filter:brightness(1.1)}
+  .btn-main:disabled{opacity:.5;cursor:not-allowed;filter:none}
+  .btn-alt{background:#1c2733;color:var(--txt);border:1px solid var(--line)}
+  .btn-alt:hover{border-color:var(--acc2);color:var(--acc2)}
+  .btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--line)}
+  .btn-ghost:hover{color:var(--txt)}
+  .mini{padding:4px 9px;font-size:11px;border-radius:7px;font-weight:600}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .stat{background:#0d131b;border:1px solid var(--line);border-radius:10px;padding:9px 14px;min-width:92px}
+  .stat b{display:block;font-size:19px;color:var(--acc)}
+  .stat small{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid #1a2430;vertical-align:middle}
+  th{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.7px;position:sticky;top:0;
+     background:#0f151d;z-index:1;cursor:pointer;user-select:none}
+  tbody tr:hover{background:#141c26}
+  .addr{font-family:var(--mono);font-size:12px;color:var(--acc2)}
+  .badge{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:99px;font-weight:700;letter-spacing:.3px}
+  .b-v3{background:#1e3a5f;color:#7dd3fc}
+  .b-v31{background:#3b2f63;color:#c4b5fd}
+  .b-v4{background:#14532d;color:#86efac}
+  .b-doppler{background:#4a3410;color:#fcd34d}
+  .cp{cursor:pointer;user-select:none}
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;max-height:640px;overflow-y:auto}
+  #log{background:#070b0f;border:1px solid var(--line);border-radius:10px;padding:11px;font-family:var(--mono);
+       font-size:11.5px;max-height:210px;overflow-y:auto;color:#9fb3c8;white-space:pre-wrap}
+  #log .ok{color:var(--acc)} #log .er{color:var(--err)} #log .wa{color:var(--warn)} #log .in{color:var(--acc2)}
+  .hint{font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.6}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#16a34a;color:#04140a;
+         padding:10px 20px;border-radius:10px;font-weight:700;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  details summary{cursor:pointer;color:var(--dim);font-size:12px;margin-bottom:10px}
+  .empty{text-align:center;color:var(--dim);padding:26px;font-size:13px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .filters input{max-width:280px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Clanker Deploy Checker <span style="font-size:12px;color:var(--dim);font-weight:400;">build 4</span></h1>
-  <p class="sub">Cari semua token yang pernah dideploy lewat Clanker oleh wallet, langsung ke halaman token buat klaim fee.</p>
+  <h1>🏦 Bankr <span>Token Scanner</span> — Base Chain</h1>
+  <div class="sub">Scan semua token yang pernah kamu deploy lewat bankr.bot / Clanker / Doppler pada satu wallet.</div>
 
-  <div class="panel">
-    <p class="panel-title">1 · KONFIGURASI</p>
+  <div class="card">
+    <h2>1 · Konfigurasi</h2>
+    <div class="grid">
+      <div>
+        <label>Alamat wallet (admin / tokenAdmin)</label>
+        <input id="wallet" value="0x15056F7882150dC6E2BB043f2f57dD0052e55b88" spellcheck="false">
+      </div>
+      <div>
+        <label>Alchemy RPC URL / API key <em style="color:#4a5a6c">(opsional — disarankan, agar scan v4 & nama cepat)</em></label>
+        <input id="alchemy" placeholder="tempel URL penuh ATAU hanya API key" spellcheck="false">
+      </div>
+    </div>
+    <details style="margin-top:12px">
+      <summary>Pengaturan lanjutan (Etherscan, CORS proxy, blok awal v4)</summary>
+      <div class="grid">
+        <div>
+          <label>Etherscan V2 API key (untuk scan log v4 tanpa Alchemy)</label>
+          <input id="etherscan" placeholder="opsional" spellcheck="false">
+        </div>
+        <div>
+          <label>CORS proxy (opsional, untuk Clanker API — daftar resmi 80 token + tanggal)</label>
+          <input id="proxy" placeholder="mis. https://corsproxy.io/?url=" spellcheck="false">
+        </div>
+      </div>
+    </details>
+    <div class="hint">🔒 Semua kunci disimpan <b>hanya di localStorage browser kamu</b> (offline/lokal). Tidak dikirim ke mana pun selain RPC/API tujuan.</div>
     <div class="row">
-      <div class="field">
-        <label>Etherscan API key (V2) — wajib</label>
-        <input type="password" id="etherscanKey" placeholder="isi key etherscan">
-      </div>
-      <div class="field">
-        <label>Alchemy API key (Base) — wajib</label>
-        <input type="password" id="alchemyKey" placeholder="isi key alchemy">
-      </div>
+      <button class="btn-main" id="scanBtn" onclick="run()">▶ Scan Sekarang</button>
+      <button class="btn-alt" onclick="copyAll()">📋 Salin Semua Alamat</button>
+      <button class="btn-alt" onclick="exportCsv()">⬇ Export CSV</button>
+      <button class="btn-ghost" onclick="clearAll()">Bersihkan</button>
     </div>
-    <div class="row">
-      <div class="field">
-        <label>Bankr.bot API key — opsional, disimpan lokal</label>
-        <input type="password" id="bankrKey" placeholder="isi key bankr (belum dipakai scan)">
-      </div>
-      <div class="field">
-        <label>Jeda request (ms)</label>
-        <input type="number" id="jeda" value="350">
-      </div>
-    </div>
-    <div class="row">
-      <div class="checkbox-row">
-        <input type="checkbox" id="forceRescan">
-        <label style="margin:0;" for="forceRescan">paksa scan ulang (abaikan cache)</label>
-      </div>
-    </div>
-    <div class="actions">
-      <button class="btn secondary" id="clearCache">Hapus cache</button>
-      <button class="btn secondary" id="clearKeys">Hapus semua key tersimpan</button>
-    </div>
-    <p class="note">Semua key dan cache disimpan lokal di browser ini (localStorage), tidak dikirim ke server manapun selain langsung ke Etherscan/Alchemy. Kolom Bankr belum tersambung ke logika scan — endpoint publik Bankr untuk "list token yang dideploy wallet" belum ketemu dokumentasinya, jadi disimpan dulu buat nanti kalau lo punya endpoint pastinya.</p>
   </div>
 
-  <div class="panel">
-    <p class="panel-title">2 · DAFTAR WALLET</p>
-    <textarea id="wallets" placeholder="satu address per baris"></textarea>
-    <div class="actions" style="margin-top:14px;">
-      <button class="btn" id="scanBtn">Mulai Scan</button>
+  <div class="card">
+    <h2>2 · Hasil Scan</h2>
+    <div class="stats" id="stats" style="display:none">
+      <div class="stat"><b id="stTotal">0</b><small>Total</small></div>
+      <div class="stat"><b id="stV3">0</b><small>Clanker v3</small></div>
+      <div class="stat"><b id="stV31">0</b><small>Clanker v3.1</small></div>
+      <div class="stat"><b id="stV4">0</b><small>Clanker v4</small></div>
+      <div class="stat"><b id="stDop">0</b><small>Doppler</small></div>
     </div>
-    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="status" id="status"></div>
+    <div class="filters" id="filters" style="display:none">
+      <input id="q" placeholder="🔍 cari nama / simbol / alamat…" oninput="render()" spellcheck="false">
+      <button class="btn-ghost mini" onclick="setFilter('all',this)">Semua</button>
+      <button class="btn-ghost mini" onclick="setFilter('clanker_v3',this)">v3</button>
+      <button class="btn-ghost mini" onclick="setFilter('clanker_v3_1',this)">v3.1</button>
+      <button class="btn-ghost mini" onclick="setFilter('clanker_v4',this)">v4</button>
+      <button class="btn-ghost mini" onclick="setFilter('doppler',this)">Doppler</button>
+    </div>
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:42px">#</th>
+            <th onclick="sortBy('name')">Nama ⇅</th>
+            <th onclick="sortBy('symbol')">Simbol ⇅</th>
+            <th>Alamat Token</th>
+            <th onclick="sortBy('source')">Sumber ⇅</th>
+            <th onclick="sortBy('date')">Deploy ⇅</th>
+            <th style="width:70px">Salin</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="7" class="empty">Belum ada data. Isi konfigurasi lalu tekan <b>Scan Sekarang</b>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hint" id="note"></div>
   </div>
 
-  <div id="results"></div>
+  <div class="card">
+    <h2>3 · Log Proses</h2>
+    <div id="log"></div>
+  </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
-const DEPLOY_SELECTORS = ['0xe9119a4e', '0x13d39311'];
-const TOKEN_CREATED_TOPIC = '0x6b04d68ca5c822b9c981d731c83ecb1356b96c8596c7659d397d234856a4537b';
-const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+/* ============================================================
+   Bankr Token Scanner — Base Chain (8453)
+   Sumber:
+   A) On-chain Clanker v3   : getTokensDeployedByUser(wallet)
+   B) On-chain Clanker v3.1 : getTokensDeployedByUser(wallet)
+   C) On-chain Clanker v4   : event TokenCreated (topic tokenAdmin = wallet)
+   D) Bankr public API      : /public/doppler/creator-fees + /beneficiary-fees
+   E) Clanker public API    : fetch-deployed-by-address (opsional lewat proxy)
+   ============================================================ */
 
-const els = {
-  etherscanKey: document.getElementById('etherscanKey'),
-  alchemyKey: document.getElementById('alchemyKey'),
-  bankrKey: document.getElementById('bankrKey'),
-  jeda: document.getElementById('jeda'),
-  forceRescan: document.getElementById('forceRescan'),
-  wallets: document.getElementById('wallets'),
-  scanBtn: document.getElementById('scanBtn'),
-  status: document.getElementById('status'),
-  results: document.getElementById('results'),
-  progressBar: document.getElementById('progressBar'),
-  progressFill: document.getElementById('progressFill'),
-  clearCache: document.getElementById('clearCache'),
-  clearKeys: document.getElementById('clearKeys')
-};
+const CHAIN_ID = 8453;
+const FACTORY_V3   = "0x375C15db32D28cEcdcAB5C03Ab889bf15cbD2c5E";
+const FACTORY_V31  = "0x2A787b2362021cC3eEa3C24C4748a6cD5B687382";
+const FACTORY_V4   = "0xE85A59c628F7d27878ACeB4bf3b35733630083a9";
+const V4_TOPIC0    = "0x9299d1d1a88d8e1abdc591ae7a167a6bc63a8f17d695804e9091ee33aa89fb67";
+const SEL_GET_DEPLOYED_BY_USER = "0xbdef3679";
+const SEL_NAME   = "0x06fdde03";
+const SEL_SYMBOL = "0x95d89b41";
 
-function loadSettings(){
-  els.etherscanKey.value = localStorage.getItem('cdc_etherscan') || '';
-  els.alchemyKey.value = localStorage.getItem('cdc_alchemy') || '';
-  els.bankrKey.value = localStorage.getItem('cdc_bankr') || '';
-  els.jeda.value = localStorage.getItem('cdc_jeda') || '350';
-  els.wallets.value = localStorage.getItem('cdc_wallets') || '';
+const PUBLIC_RPCS = [
+  "https://base-rpc.publicnode.com",
+  "https://mainnet.base.org",
+  "https://base.drpc.org",
+  "https://1rpc.io/base",
+  "https://base.meowrpc.com",
+  "https://base-pokt.nodies.app"
+];
+
+let DATA = [];       // hasil akhir
+let FILTER = "all";
+let SORT = { key: "date", dir: -1 };
+let rpcIdx = 0;
+
+/* ---------- util ---------- */
+const $ = id => document.getElementById(id);
+function log(msg, cls="") {
+  const el = $("log");
+  const t = new Date().toLocaleTimeString();
+  el.innerHTML += `<div class="${cls}">[${t}] ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
 }
-function saveSettings(){
-  localStorage.setItem('cdc_etherscan', els.etherscanKey.value.trim());
-  localStorage.setItem('cdc_alchemy', els.alchemyKey.value.trim());
-  localStorage.setItem('cdc_bankr', els.bankrKey.value.trim());
-  localStorage.setItem('cdc_jeda', els.jeda.value);
-  localStorage.setItem('cdc_wallets', els.wallets.value);
-}
-loadSettings();
-['etherscanKey','alchemyKey','bankrKey','jeda','wallets'].forEach(k=>{
-  els[k].addEventListener('change', saveSettings);
-});
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1800); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function short(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : ""; }
+function pad32(a){ return "0x" + "0".repeat(24) + a.toLowerCase().replace(/^0x/,""); }
+function isAddr(a){ return /^0x[0-9a-fA-F]{40}$/.test(a||""); }
 
-els.clearCache.addEventListener('click', ()=>{
-  Object.keys(localStorage).filter(k=>k.startsWith('cdc_cache_')).forEach(k=>localStorage.removeItem(k));
-  els.status.textContent = 'Cache dihapus.';
-});
-els.clearKeys.addEventListener('click', ()=>{
-  ['cdc_etherscan','cdc_alchemy','cdc_bankr'].forEach(k=>localStorage.removeItem(k));
-  loadSettings();
-  els.status.textContent = 'Key tersimpan dihapus.';
-});
-
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-
-async function etherscanTxList(address, apiKey){
-  const url = `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  if(data.status !== '1'){
-    if(data.message === 'No transactions found') return [];
-    throw new Error('Etherscan: ' + (data.message || 'gagal ambil data') + (data.result ? ' - ' + data.result : ''));
+async function copyText(txt, label="Tersalin"){
+  try{ await navigator.clipboard.writeText(txt); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(_){} document.body.removeChild(ta);
   }
-  return data.result;
+  toast(label);
 }
 
-async function alchemyRpc(alchemyKey, method, params){
-  const url = `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`;
-  const res = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({jsonrpc:'2.0', id:1, method, params})
-  });
-  const data = await res.json();
-  if(data.error){
-    console.error('Alchemy RPC error:', method, data.error);
-    throw new Error(data.error.message || 'Alchemy RPC error');
-  }
-  return data.result;
-}
-
-async function getDeployedTokenFromTx(txHash, alchemyKey){
-  const receipt = await alchemyRpc(alchemyKey, 'eth_getTransactionReceipt', [txHash]);
-  if(!receipt || !receipt.logs) return null;
-  for(const log of receipt.logs){
-    if(log.topics && log.topics[0] && log.topics[0].toLowerCase() === TRANSFER_TOPIC){
-      const fromTopic = log.topics[1];
-      if(fromTopic && /^0x0+$/.test(fromTopic.slice(2))){
-        return log.address;
-      }
+/* ---------- decoding ---------- */
+function hexToUtf8(hex){
+  if(!hex) return "";
+  let out="", i=0;
+  try{
+    for(; i+1<hex.length; i+=2){
+      const c=parseInt(hex.substr(i,2),16);
+      if(c===0) continue;
+      out+=String.fromCharCode(c);
     }
-  }
+    return decodeURIComponent(escape(out));
+  }catch(e){ return out; }
+}
+function decodeString(hex){
+  if(!hex || hex==="0x") return null;
+  const b = hex.slice(2);
+  try{
+    const off = parseInt(b.slice(0,64),16)*2;
+    const len = parseInt(b.slice(off,off+64),16)*2;
+    if(off+64+len <= b.length){
+      const s = hexToUtf8(b.slice(off+64, off+64+len)).trim();
+      if(s && s.length<200) return s;
+    }
+  }catch(e){}
+  try{ const s = hexToUtf8(b.slice(0,64)).replace(/\u0000/g,"").trim(); if(s) return s; }catch(e){}
   return null;
 }
-
-async function getTokenMetadata(tokenAddress, alchemyKey){
-  const url = `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`;
-  const res = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({jsonrpc:'2.0', id:1, method:'alchemy_getTokenMetadata', params:[tokenAddress]})
-  });
-  const data = await res.json();
-  return data.result || {};
-}
-
-function formatDate(unixSeconds){
-  if(!unixSeconds) return 'tanggal tidak diketahui';
-  const d = new Date(parseInt(unixSeconds,10) * 1000);
-  return d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
-}
-
-function shortAddr(a){
-  return a.slice(0,6) + '...' + a.slice(-4);
-}
-
-async function getBlockTimestamp(blockNumber, alchemyKey){
-  const block = await alchemyRpc(alchemyKey, 'eth_getBlockByNumber', [blockNumber, false]);
-  if(!block || !block.timestamp) return null;
-  return parseInt(block.timestamp, 16);
-}
-
-async function scanByCreatorAdmin(address, alchemyKey, jeda){
-  const padded = '0x' + address.slice(2).toLowerCase().padStart(64, '0');
-  const logs = await alchemyRpc(alchemyKey, 'eth_getLogs', [{
-    fromBlock: '0x0',
-    toBlock: 'latest',
-    topics: [TOKEN_CREATED_TOPIC, null, padded]
-  }]);
-  await sleep(jeda);
-  if(!logs) return [];
-
-  const tokens = [];
-  for(const log of logs){
-    const tokenAddress = '0x' + log.topics[1].slice(26);
-    const meta = await getTokenMetadata(tokenAddress, alchemyKey);
-    await sleep(jeda);
-    const ts = await getBlockTimestamp(log.blockNumber, alchemyKey);
-    await sleep(jeda);
-    tokens.push({
-      address: tokenAddress,
-      name: meta.name || 'Unknown',
-      symbol: meta.symbol || '?',
-      txHash: log.transactionHash,
-      timestamp: ts
+function decodeDeployedByUser(res){
+  if(!res || res==="0x") return [];
+  const b = res.slice(2);
+  const off = parseInt(b.slice(0,64),16)*2;
+  const len = parseInt(b.slice(off,off+64),16)*2;
+  const words=[];
+  for(let i=off+64; i+64<=b.length; i+=64) words.push(b.slice(i,i+64));
+  const out=[];
+  for(let i=0;i<len && (i*3+2)<words.length;i++){
+    out.push({
+      token : "0x"+words[i*3].slice(24),
+      num   : BigInt("0x"+words[i*3+1]).toString(),
+      locker: "0x"+words[i*3+2].slice(24)
     });
   }
-  return tokens;
+  return out;
 }
 
-async function scanWallet(address, settings, onProgress){
-  const cacheKey = 'cdc_cache_' + address.toLowerCase();
-  if(!settings.force){
-    const cached = localStorage.getItem(cacheKey);
-    if(cached){
-      return JSON.parse(cached);
-    }
+/* ---------- RPC ---------- */
+function rpcUrls(){
+  const al = $("alchemy").value.trim();
+  if(al){
+    if(/^https?:\/\//i.test(al)) return [al];
+    return ["https://base-mainnet.g.alchemy.com/v2/"+al];
   }
-
-  const txs = await etherscanTxList(address, settings.etherscanKey);
-  await sleep(settings.jeda);
-
-  const deployTxs = txs.filter(tx =>
-    tx.input && tx.isError === '0' &&
-    DEPLOY_SELECTORS.some(sel => tx.input.toLowerCase().startsWith(sel))
-  );
-
-  const tokensFromTx = [];
-  for(let i=0; i<deployTxs.length; i++){
-    const tx = deployTxs[i];
-    onProgress(i+1, deployTxs.length, 'tx sender');
-    const tokenAddress = await getDeployedTokenFromTx(tx.hash, settings.alchemyKey);
-    await sleep(settings.jeda);
-    if(tokenAddress){
-      const meta = await getTokenMetadata(tokenAddress, settings.alchemyKey);
-      await sleep(settings.jeda);
-      tokensFromTx.push({
-        address: tokenAddress,
-        name: meta.name || 'Unknown',
-        symbol: meta.symbol || '?',
-        txHash: tx.hash,
-        timestamp: tx.timeStamp
-      });
-    }
-  }
-
-  onProgress(0, 0, 'creatorAdmin');
-  const tokensFromCreator = await scanByCreatorAdmin(address, settings.alchemyKey, settings.jeda);
-
-  const merged = {};
-  [...tokensFromTx, ...tokensFromCreator].forEach(t => {
-    merged[t.address.toLowerCase()] = t;
-  });
-  const tokens = Object.values(merged);
-  tokens._debug = `tx-sender: ${deployTxs.length} deploy tx, ${tokensFromTx.length} token · creatorAdmin: ${tokensFromCreator.length} token`;
-
-  localStorage.setItem(cacheKey, JSON.stringify(tokens));
-  return tokens;
+  return PUBLIC_RPCS;
 }
-
-function renderWallet(address, tokens){
-  const block = document.createElement('div');
-  block.className = 'wallet-block';
-
-  const head = document.createElement('div');
-  head.className = 'wallet-head';
-  head.innerHTML = `<span class="wallet-addr">${address}</span><span class="wallet-count">${tokens.length} token</span>`;
-  block.appendChild(head);
-
-  if(tokens._debug){
-    const dbg = document.createElement('div');
-    dbg.className = 'note';
-    dbg.textContent = tokens._debug;
-    block.appendChild(dbg);
-  }
-
-  if(tokens.length === 0){
-    const empty = document.createElement('div');
-    empty.className = 'empty';
-    empty.textContent = 'Belum ada deploy Clanker terdeteksi dari wallet ini.';
-    block.appendChild(empty);
-  } else {
-    tokens.forEach(t => {
-      const card = document.createElement('div');
-      card.className = 'token-card';
-      card.innerHTML = `
-        <div class="token-info">
-          <p class="token-name">${t.name} <span class="token-sym">${t.symbol}</span></p>
-          <div class="token-addr">${t.address}</div>
-          <div class="token-date">dideploy ${formatDate(t.timestamp)}</div>
-        </div>
-        <div class="token-actions">
-          <a class="link-btn" href="https://basescan.org/tx/${t.txHash}" target="_blank" rel="noopener">Tx</a>
-          <a class="link-btn primary" href="https://clanker.world/clanker/${t.address}" target="_blank" rel="noopener">Klaim di Clanker</a>
-        </div>
-      `;
-      block.appendChild(card);
-    });
-  }
-  els.results.appendChild(block);
-}
-
-els.scanBtn.addEventListener('click', async () => {
-  saveSettings();
-  const etherscanKey = els.etherscanKey.value.trim();
-  const alchemyKey = els.alchemyKey.value.trim();
-  const jeda = parseInt(els.jeda.value, 10) || 300;
-  const force = els.forceRescan.checked;
-  const addresses = els.wallets.value.split('\n').map(a=>a.trim()).filter(a=>a.startsWith('0x') && a.length === 42);
-
-  if(!etherscanKey || !alchemyKey){
-    els.status.textContent = 'Isi dulu Etherscan API key dan Alchemy API key.';
-    return;
-  }
-  if(addresses.length === 0){
-    els.status.textContent = 'Isi minimal 1 alamat wallet yang valid.';
-    return;
-  }
-
-  els.scanBtn.disabled = true;
-  els.results.innerHTML = '';
-  els.progressBar.style.display = 'block';
-
-  for(let w=0; w<addresses.length; w++){
-    const address = addresses[w];
-    els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: ${shortAddr(address)}...`;
-    els.progressFill.style.width = `${Math.round((w/addresses.length)*100)}%`;
-
-    let tokens;
+async function rpc(method, params, timeoutMs=25000){
+  const urls = rpcUrls();
+  let lastErr;
+  for(let n=0;n<urls.length;n++){
+    const url = urls[(rpcIdx+n)%urls.length];
     try{
-      tokens = await scanWallet(address, {etherscanKey, alchemyKey, jeda, force}, (done,total,tahap)=>{
-        if(tahap === 'creatorAdmin') els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek event TokenCreated (creatorAdmin)...`;
-        else if(total>0) els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek deploy tx ${done}/${total} (tx sender)`;
+      const ctl = new AbortController();
+      const to = setTimeout(()=>ctl.abort(), timeoutMs);
+      const r = await fetch(url,{
+        method:"POST", headers:{"content-type":"application/json"},
+        body: JSON.stringify({jsonrpc:"2.0", id:Date.now(), method, params}),
+        signal: ctl.signal
       });
-    } catch(e){
-      els.status.textContent = `Error pas scan ${shortAddr(address)}: ${e.message}`;
-      tokens = [];
-    }
-
-    renderWallet(address, tokens);
+      clearTimeout(to);
+      const j = await r.json();
+      if(j.error) throw new Error(j.error.message||JSON.stringify(j.error));
+      rpcIdx = (rpcIdx+n)%urls.length;
+      return j.result;
+    }catch(e){ lastErr=e; }
   }
+  throw new Error("RPC gagal: "+(lastErr?lastErr.message:"unknown"));
+}
+async function rpcBatch(calls, chunk=20, timeoutMs=40000){
+  const urls = rpcUrls();
+  const out = [];
+  for(let i=0;i<calls.length;i+=chunk){
+    const slice = calls.slice(i,i+chunk).map((c,ix)=>({jsonrpc:"2.0", id:ix, method:c.method, params:c.params}));
+    let res=null, lastErr;
+    for(const url of urls){
+      try{
+        const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),timeoutMs);
+        const r=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(slice),signal:ctl.signal});
+        clearTimeout(to);
+        res = await r.json(); break;
+      }catch(e){ lastErr=e; }
+    }
+    if(!res) throw new Error("batch RPC gagal: "+(lastErr?lastErr.message:""));
+    if(!Array.isArray(res)) res=[res];
+    const byId = {}; res.forEach(x=>byId[x.id]=x.result);
+    slice.forEach((c,ix)=>out.push(byId[ix]!==undefined ? byId[ix] : null));
+  }
+  return out;
+}
 
-  els.progressFill.style.width = '100%';
-  els.status.textContent = `Selesai. ${addresses.length} wallet discan.`;
-  els.scanBtn.disabled = false;
-});
+/* ---------- sumber data ---------- */
+async function scanClankerRegistry(factory, source, label){
+  const res = await rpc("eth_call",[{to:factory, data:SEL_GET_DEPLOYED_BY_USER+pad32($("wallet").value.trim())},"latest"]);
+  const rows = decodeDeployedByUser(res);
+  log(`${label}: ${rows.length} token ditemukan.`, "ok");
+  return rows.map(r=>({ address:r.token, source, locker:r.locker, date:null, name:null, symbol:null }));
+}
+
+async function scanV4Logs(){
+  const w = $("wallet").value.trim();
+  const al = $("alchemy").value.trim();
+  const es = $("etherscan").value.trim();
+  let addrs = [];
+  if(al || PUBLIC_RPCS.length){
+    // coba eth_getLogs (Alchemy mendukung rentang penuh; publik mungkin menolak)
+    try{
+      const logs = await rpc("eth_getLogs",[{
+        address: FACTORY_V4, fromBlock:"0x0", toBlock:"latest",
+        topics:[V4_TOPIC0, null, pad32(w)]
+      }], 45000);
+      addrs = logs.map(l=>"0x"+l.topics[1].slice(26));
+      log(`Clanker v4 (getLogs): ${addrs.length} token.`, "ok");
+    }catch(e){ log(`Clanker v4 getLogs gagal (${e.message}). `, "wa"); }
+  }
+  if(!addrs.length && es){
+    try{
+      const url = `https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}&module=logs&action=getLogs`
+        + `&fromBlock=0&toBlock=latest&address=${FACTORY_V4}&topic0=${V4_TOPIC0}`
+        + `&topic0_2_opr=and&topic2=${pad32(w)}&apikey=${encodeURIComponent(es)}`;
+      const j = await (await fetch(url)).json();
+      const arr = Array.isArray(j.result)?j.result:[];
+      addrs = arr.map(l=>"0x"+l.topics[1].slice(26));
+      log(`Clanker v4 (Etherscan): ${addrs.length} token.`, "ok");
+    }catch(e){ log(`Clanker v4 Etherscan gagal: ${e.message}`, "wa"); }
+  }
+  if(!addrs.length) log("Clanker v4: dilewati (butuh Alchemy/Etherscan untuk log).", "wa");
+  return addrs.map(a=>({address:a, source:"clanker_v4", locker:"0x63D2DfEA64b3433F4071A98665bcD7Ca14d93496", date:null, name:null, symbol:null}));
+}
+
+async function scanBankrApi(){
+  const w = $("wallet").value.trim();
+  const out=[];
+  for(const ep of ["creator-fees","beneficiary-fees"]){
+    try{
+      const u = `https://api.bankr.bot/public/doppler/${ep}/${w}${ep==="creator-fees"?"?days=90":""}`;
+      const j = await (await fetch(u)).json();
+      (j.tokens||[]).forEach(t=>{
+        out.push({
+          address:t.tokenAddress,
+          source: t.source==="doppler" ? "doppler" : "clanker_v4",
+          locker:"", date:null,
+          name:t.name, symbol:t.symbol,
+          claimable: t.claimable ? t.claimable.token0 : null,
+          share: t.share||null
+        });
+      });
+      log(`Bankr API ${ep}: ${(j.tokens||[]).length} token.`, "ok");
+    }catch(e){ log(`Bankr API ${ep} gagal: ${e.message}`, "wa"); }
+  }
+  return out;
+}
+
+async function scanClankerApi(){
+  const proxy = $("proxy").value.trim();
+  if(!proxy) { log("Clanker API: dilewati (isi kolom CORS proxy untuk daftar resmi).", "wa"); return []; }
+  const w = $("wallet").value.trim();
+  const out=[]; let cursor=null, page=0;
+  try{
+    while(page<40){
+      let u = `https://www.clanker.world/api/tokens/fetch-deployed-by-address?address=${w}`;
+      if(cursor) u += "&cursor="+encodeURIComponent(cursor);
+      const j = await (await fetch(proxy+encodeURIComponent(u))).json();
+      (j.data||[]).forEach(t=>out.push({
+        address:t.contract_address,
+        source: t.type||"clanker",
+        locker:t.locker_address||"", date:t.deployed_at||null,
+        name:t.name, symbol:t.symbol
+      }));
+      cursor=j.cursor; page++;
+      if(!cursor || !(j.data||[]).length) break;
+      await sleep(150);
+    }
+    log(`Clanker API: ${out.length} token (${page} halaman).`, "ok");
+  }catch(e){ log(`Clanker API gagal: ${e.message}`, "wa"); }
+  return out;
+}
+
+/* ---------- resolusi nama ---------- */
+async function resolveNames(rows){
+  const need = rows.filter(r=>r.address && (!r.name || !r.symbol));
+  const uniq = [...new Set(need.map(r=>r.address.toLowerCase()))];
+  if(!uniq.length) return;
+  log(`Mengambil nama/simbol on-chain untuk ${uniq.length} token…`, "in");
+  const calls=[];
+  uniq.forEach(a=>{ calls.push({method:"eth_call", params:[{to:a,data:SEL_NAME},"latest"]});
+                    calls.push({method:"eth_call", params:[{to:a,data:SEL_SYMBOL},"latest"]}); });
+  const res = await rpcBatch(calls, 20);
+  const map={};
+  uniq.forEach((a,i)=>{ map[a]={ name:decodeString(res[i*2]), symbol:decodeString(res[i*2+1]) }; });
+  rows.forEach(r=>{
+    const m = map[(r.address||"").toLowerCase()];
+    if(m){ if(!r.name) r.name=m.name||"(tanpa nama)"; if(!r.symbol) r.symbol=m.symbol||"—"; }
+  });
+}
+
+/* ---------- render ---------- */
+function sourceLabel(s){
+  return {clanker_v3:"Clanker v3", clanker_v3_1:"Clanker v3.1", clanker_v4:"Clanker v4", doppler:"Doppler"}
+    .map((v,k)=>k===s?v:null).find(Boolean)
+    || ({clanker_v3:"Clanker v3", clanker_v3_1:"Clanker v3.1", clanker_v4:"Clanker v4", doppler:"Doppler"}[s] || s);
+}
+function sourceBadge(s){
+  const cls = s==="clanker_v3"?"b-v3":s==="clanker_v3_1"?"b-v31":s==="clanker_v4"?"b-v4":"b-doppler";
+  return `<span class="badge ${cls}">${sourceLabel(s)}</span>`;
+}
+function setFilter(f, el){ FILTER=f; if(el){ document.querySelectorAll('#filters .mini').forEach(b=>b.classList.remove('btn-alt')); el.classList.add('btn-alt'); } render(); }
+function sortBy(k){ SORT.dir = (SORT.key===k)? -SORT.dir : -1; SORT.key=k; render(); }
+
+function render(){
+  const q = ($("q").value||"").toLowerCase().trim();
+  let rows = DATA.filter(r=>{
+    if(FILTER!=="all" && r.source!==FILTER) return false;
+    if(!q) return true;
+    return (r.name||"").toLowerCase().includes(q) || (r.symbol||"").toLowerCase().includes(q)
+        || (r.address||"").toLowerCase().includes(q);
+  });
+  rows.sort((a,b)=>{
+    const k=SORT.key; let x=(a[k]||"").toString(), y=(b[k]||"").toString();
+    return x<y ? -SORT.dir : x>y ? SORT.dir : 0;
+  });
+  const tb=$("tbody");
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="7" class="empty">Tidak ada token yang cocok.</td></tr>`; return; }
+  tb.innerHTML = rows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${r.name||"—"}</td>
+      <td style="color:var(--dim)">${r.symbol||"—"}</td>
+      <td class="addr" title="${r.address}">${r.address}</td>
+      <td>${sourceBadge(r.source)}</td>
+      <td style="color:var(--dim);font-size:11.5px">${r.date?r.date.slice(0,10):"—"}</td>
+      <td><button class="btn-alt mini" onclick="copyText('${r.address}','Alamat disalin')">Salin</button></td>
+    </tr>`).join("");
+}
+function updateStats(){
+  $("stats").style.display="flex"; $("filters").style.display="flex";
+  $("stTotal").textContent = DATA.length;
+  $("stV3").textContent   = DATA.filter(r=>r.source==="clanker_v3").length;
+  $("stV31").textContent  = DATA.filter(r=>r.source==="clanker_v3_1").length;
+  $("stV4").textContent   = DATA.filter(r=>r.source==="clanker_v4").length;
+  $("stDop").textContent  = DATA.filter(r=>r.source==="doppler").length;
+}
+function copyAll(){
+  if(!DATA.length){ toast("Belum ada data"); return; }
+  copyText(DATA.map(r=>r.address).join("\n"), DATA.length+" alamat tersalin");
+}
+function exportCsv(){
+  if(!DATA.length){ toast("Belum ada data"); return; }
+  const head="nama,symbol,alamat,sumber,tanggal\n";
+  const body=DATA.map(r=>`"${(r.name||"").replace(/"/g,'""')}","${(r.symbol||"").replace(/"/g,'""')}",${r.address},${r.source},${r.date||""}`).join("\n");
+  const blob=new Blob([head+body],{type:"text/csv"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="bankr-tokens-"+$("wallet").value.trim().slice(0,10)+".csv"; a.click();
+  toast("CSV diunduh");
+}
+function clearAll(){
+  DATA=[]; $("tbody").innerHTML=`<tr><td colspan="7" class="empty">Belum ada data.</td></tr>`;
+  $("stats").style.display="none"; $("filters").style.display="none"; $("log").innerHTML=""; $("note").innerHTML="";
+}
+
+/* ---------- orkestrasi ---------- */
+function saveCfg(){
+  try{
+    localStorage.setItem("bankrScanner", JSON.stringify({
+      wallet:$("wallet").value.trim(), alchemy:$("alchemy").value.trim(),
+      etherscan:$("etherscan").value.trim(), proxy:$("proxy").value.trim()
+    }));
+  }catch(e){}
+}
+function loadCfg(){
+  try{
+    const c=JSON.parse(localStorage.getItem("bankrScanner")||"{}");
+    if(c.wallet) $("wallet").value=c.wallet;
+    if(c.alchemy) $("alchemy").value=c.alchemy;
+    if(c.etherscan) $("etherscan").value=c.etherscan;
+    if(c.proxy) $("proxy").value=c.proxy;
+  }catch(e){}
+}
+
+async function run(){
+  const w = $("wallet").value.trim();
+  if(!isAddr(w)){ toast("Alamat wallet tidak valid"); return; }
+  saveCfg();
+  $("scanBtn").disabled=true; $("scanBtn").textContent="⏳ Memindai…";
+  $("log").innerHTML=""; DATA=[];
+  $("tbody").innerHTML=`<tr><td colspan="7" class="empty">Memindai…</td></tr>`;
+  const t0=performance.now();
+  log(`Mulai scan untuk ${w}`, "in");
+  const all=[];
+  try{
+    try{ all.push(...await scanClankerRegistry(FACTORY_V3 , "clanker_v3"  , "Clanker v3"));   }catch(e){ log("Clanker v3 gagal: "+e.message,"er"); }
+    try{ all.push(...await scanClankerRegistry(FACTORY_V31, "clanker_v3_1", "Clanker v3.1")); }catch(e){ log("Clanker v3.1 gagal: "+e.message,"er"); }
+    all.push(...await scanV4Logs());
+    all.push(...await scanClankerApi());
+    all.push(...await scanBankrApi());
+
+    // dedupe by address, prioritas sumber yang punya nama/tanggal
+    const map={};
+    all.forEach(r=>{
+      if(!r.address) return;
+      const k=r.address.toLowerCase();
+      if(!map[k]) map[k]=r;
+      else {
+        const old=map[k];
+        map[k]={ ...old, name: old.name||r.name, symbol: old.symbol||r.symbol,
+                 date: old.date||r.date, locker: old.locker||r.locker,
+                 claimable: r.claimable!==undefined?r.claimable:old.claimable };
+      }
+    });
+    DATA = Object.values(map);
+    log(`Terkumpul ${DATA.length} token unik.`, "ok");
+
+    await resolveNames(DATA);
+
+    DATA.forEach(r=>{ if(!r.name) r.name="(tanpa nama)"; if(!r.symbol) r.symbol="—"; });
+    updateStats(); render();
+    const dt=((performance.now()-t0)/1000).toFixed(1);
+    log(`Selesai dalam ${dt}s.`, "ok");
+    $("note").innerHTML = `Total <b>${DATA.length}</b> token. Sumber: registry on-chain Clanker v3/v3.1 + event v4 + Bankr API`
+      + ` (Doppler/Clanker). Kolom <b>Deploy</b> hanya terisi bila Clanker API diaktifkan.`;
+  }catch(e){
+    log("GAGAL: "+e.message, "er");
+    $("tbody").innerHTML=`<tr><td colspan="7" class="empty">Scan gagal — lihat log.</td></tr>`;
+  }finally{
+    $("scanBtn").disabled=false; $("scanBtn").textContent="▶ Scan Sekarang";
+  }
+}
+
+window.onerror = (m)=>log("JS error: "+m,"er");
+window.onunhandledrejection = (e)=>log("Promise reject: "+(e.reason&&e.reason.message||e.reason),"er");
+loadCfg();
+log("Siap. Isi Alchemy key (opsional) lalu tekan Scan.", "in");
 </script>
 </body>
 </html>
