@@ -215,8 +215,6 @@ textarea{resize:vertical;min-height:90px;line-height:1.5;}
 const DEPLOY_SELECTORS = ['0xe9119a4e', '0x13d39311'];
 const TOKEN_CREATED_TOPIC = '0x6b04d68ca5c822b9c981d731c83ecb1356b96c8596c7659d397d234856a4537b';
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-const ZERO_TOPIC = '0x0000000000000000000000000000000000000000000000000000000000000';
-const ZERO_TOPIC_FIXED = '0x0000000000000000000000000000000000000000000000000000000000000'.slice(0,66);
 
 const els = {
   etherscanKey: document.getElementById('etherscanKey'),
@@ -269,7 +267,10 @@ async function etherscanTxList(address, apiKey){
   const url = `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`;
   const res = await fetch(url);
   const data = await res.json();
-  if(data.status !== '1') return [];
+  if(data.status !== '1'){
+    if(data.message === 'No transactions found') return [];
+    throw new Error('Etherscan: ' + (data.message || 'gagal ambil data') + (data.result ? ' - ' + data.result : ''));
+  }
   return data.result;
 }
 
@@ -331,17 +332,11 @@ async function getBlockTimestamp(blockNumber, alchemyKey){
 
 async function scanByCreatorAdmin(address, alchemyKey, jeda){
   const padded = '0x' + address.slice(2).toLowerCase().padStart(64, '0');
-  let logs;
-  try{
-    logs = await alchemyRpc(alchemyKey, 'eth_getLogs', [{
-      fromBlock: '0x0',
-      toBlock: 'latest',
-      topics: [TOKEN_CREATED_TOPIC, null, padded]
-    }]);
-  } catch(e){
-    console.error('scanByCreatorAdmin gagal:', e.message);
-    return [];
-  }
+  const logs = await alchemyRpc(alchemyKey, 'eth_getLogs', [{
+    fromBlock: '0x0',
+    toBlock: 'latest',
+    topics: [TOKEN_CREATED_TOPIC, null, padded]
+  }]);
   await sleep(jeda);
   if(!logs) return [];
 
