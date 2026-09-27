@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clanker V4 · 1-Click Fee Claimer (Base)</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<style>
+  :root{--card:#131a22;--line:#22303f;--txt:#e7eef7;--mut:#8fa3b8;--acc:#3b82f6;--ok:#28c76f;--warn:#ffb020;--err:#ff5c5c;--gold:#ffd75e}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#070b10,#0b0f14 40%);color:var(--txt);font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;padding:16px}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:0 0 10px}
+  .warnbox{background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.35);border-radius:10px;padding:12px;font-size:12.8px;color:#ffd489;margin-bottom:14px;line-height:1.55}
+  .okbox{background:rgba(40,199,111,.1);border:1px solid rgba(40,199,111,.35);border-radius:10px;padding:12px;font-size:12.8px;color:#9ff0c0;margin-bottom:14px;line-height:1.55}
+  input,textarea{width:100%;background:#0c1219;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:10px 12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  textarea{min-height:70px;resize:vertical}
+  label{display:block;color:var(--mut);font-size:12.5px;margin:10px 0 5px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:200px}
+  .btn{appearance:none;border:none;border-radius:9px;padding:10px 14px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-primary{background:var(--acc);color:#fff}
+  .btn-ok{background:#1f7a4d;color:#fff}
+  .btn-gold{background:#8a6d1f;color:#fff5cc}
+  .btn-ghost{background:#1b2531;color:var(--txt);border:1px solid var(--line)}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .tblock{background:#0e1116;border:1px solid var(--line);border-radius:11px;padding:13px;margin-bottom:11px}
+  .thead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+  .tname{font-weight:700;font-size:14px}
+  .mono{font-family:ui-monospace,monospace;font-size:12px;word-break:break-all}
+  .kv{font-size:12.5px;color:var(--mut);margin-top:6px}
+  .kv b{color:var(--txt)}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .b-ok{background:rgba(40,199,111,.14);color:var(--ok);border:1px solid rgba(40,199,111,.35)}
+  .b-mut{background:#1c2330;color:var(--mut);border:1px solid var(--line)}
+  .b-gold{background:rgba(255,205,80,.16);color:var(--gold);border:1px solid rgba(255,205,80,.4)}
+  .b-err{background:rgba(255,92,92,.14);color:var(--err);border:1px solid rgba(255,92,92,.35)}
+  #log{margin-top:10px;background:#0c1219;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:11.5px ui-monospace,monospace;max-height:210px;overflow:auto;color:#9fb3c8;white-space:pre-wrap}
+  .stat{font-size:13px;color:var(--mut);margin-top:8px}.stat b{color:var(--txt)}
+  a{color:#7fb3ff}
+  .big{font-size:22px;font-weight:800;color:var(--gold);font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚡ Clanker V4 — 1-Click Fee Claimer</h1>
+  <div class="sub">Base chain · klaim creator fee dari pool Uniswap V4 ke wallet Anda</div>
+
+  <div class="warnbox">
+    <b>Cara kerjanya (2 transaksi per token):</b><br>
+    <b>1.</b> <code>collectRewards(token)</code> di locker → menyapu fee dari pool V4 &amp; mengubahnya jadi WETH<br>
+    <b>2.</b> <code>claim(feeOwner, WETH)</code> di ClankerFeeLocker → mengirim WETH ke <b>fee owner</b> (Anda)<br><br>
+    🔓 Kedua fungsi <b>permissionless</b> — siapa pun bisa memicunya, tapi dana <b>selalu</b> dikirim ke pemilik yang terdaftar. Aman.<br>
+    💡 Jadi kalau wallet <i>fee owner</i> tidak punya ETH untuk gas, Anda bisa memicu klaim dari <b>wallet lain yang ada gas-nya</b> — WETH tetap masuk ke wallet owner.
+  </div>
+
+  <div class="card">
+    <h2>1 · Wallet &amp; jaringan</h2>
+    <div class="actions">
+      <button class="btn btn-primary" id="connect">🔌 Connect Wallet</button>
+      <button class="btn btn-ghost" id="addBase">Tambah jaringan Base</button>
+      <button class="btn btn-ghost" id="refresh">⟳ Baca ulang data</button>
+    </div>
+    <div class="stat" id="wstat">belum terhubung</div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Target</h2>
+    <div class="row">
+      <div>
+        <label>Fee owner (alamat yang menerima fee)</label>
+        <input id="owner" value="0x15056f7882150dc6e2bb043f2f57dd0052e55b88" spellcheck="false">
+      </div>
+      <div>
+        <label>RPC (opsional — isi Alchemy key untuk hasil tercepat)</label>
+        <input id="rpc" placeholder="https://base-mainnet.g.alchemy.com/v2/KEY" spellcheck="false">
+      </div>
+    </div>
+    <label>Token Clanker V4 (satu per baris)</label>
+    <textarea id="tokens" spellcheck="false">0xf96cd9e929805ada7857839d44bb814946df3b07</textarea>
+    <div class="actions">
+      <button class="btn btn-ghost" id="fromApi">⟳ Ambil daftar token dari Bankr API</button>
+      <button class="btn btn-ghost" id="addCb">+ CBUSD1</button>
+    </div>
+    <div class="stat" id="rstat">siap.</div>
+    <div id="log"></div>
+  </div>
+
+  <div class="card" id="resCard" style="display:none">
+    <h2>3 · Status &amp; klaim</h2>
+    <div class="stat" id="summary"></div>
+    <div class="actions" style="margin:10px 0">
+      <button class="btn btn-gold" id="claimAll">⚡ KLAIM SEMUA (auto 2 langkah)</button>
+      <button class="btn btn-ghost" id="claimWeth">💰 claim(feeOwner, WETH) saja</button>
+    </div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+
+/* ==== kontrak Base ==== */
+const CLANKER_V4="0xE85A59c628F7d27878ACeB4bf3b35733630083a9"; // Clanker v4.0
+const FEE_LOCKER="0xF3622742b1E446D92e45E22923Ef11C2fcD55D68"; // ClankerFeeLocker
+const WETH="0x4200000000000000000000000000000000000006";
+const CHAIN=8453, CHAIN_HEX="0x2105";
+
+/* ==== selector ==== */
+const S={
+  deployInfo:"0x06562980",   // deploymentInfoForToken(address) -> (token,hook,locker)
+  feeLockerOf:"0x70e9d244",  // feeLocker()
+  collectRewards:"0x5763dbd0", // collectRewards(address)
+  collectNoUnlock:"0x86b0c83f", // collectRewardsWithoutUnlock(address)
+  feesToClaim:"0x8417645e",  // feesToClaim(address,address)
+  claim:"0x21c0b342",        // claim(address feeOwner,address token)
+  balanceOf:"0x70a08231",
+  lockInfo:"0x30bd3eeb"      // tokenRewards(address)
+};
+const ZERO="0x0000000000000000000000000000000000000000";
+const PUB=["https://base-rpc.publicnode.com","https://mainnet.base.org","https://base.drpc.org","https://1rpc.io/base","https://base.meowrpc.com"];
+
+function log(m){
+  try{
+    const el=$("log");
+    el.textContent=("["+new Date().toLocaleTimeString()+"] "+m+"\n"+el.textContent).slice(0,12000);
+  }catch(e){}
+  try{console.log("[claim]",m);}catch(e){}
+}
+window.addEventListener("error",e=>log("❌ ERROR: "+(e.message||e.error)));
+window.addEventListener("unhandledrejection",e=>log("❌ PROMISE: "+((e.reason&&(e.reason.message||e.reason))||"?")));
+
+const pad=a=>a.toLowerCase().replace(/^0x/,"").padStart(64,"0");
+const A12=h=>{try{return h&&h.length>=66?"0x"+h.slice(-40):"";}catch(e){return"";}}
+const isAddr=a=>/^0x[0-9a-fA-F]{40}$/.test((a||"").trim());
+const Z=h=>{const b=(h||"").slice(2),o=[];for(let i=0;i+64<=b.length;i+=64)o.push(b.slice(i,i+64));return o;};
+const BI=h=>{try{return h&&h!=="0x"?BigInt(h):0n;}catch(e){return 0n;}};
+const fmt=(v,d=18)=>Number(v)/10**d;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ==== read provider ==== */
+let readIdx=0, readTimeout=9000;
+function readUrls(){
+  const k=$("rpc").value.trim();
+  return k?[ (k.startsWith("http")?k:`https://base-mainnet.g.alchemy.com/v2/${k}`) ].concat(PUB) : PUB.slice();
+}
+let provider=null;               // ethers read provider
+function makeProvider(url){
+  if(window.ethers){
+    try{ return new ethers.JsonRpcProvider(url, CHAIN, {staticNetwork:true}); }catch(e){}
+  }
+  return null;
+}
+async function rawCall(to,data,tries=3){
+  const urls=readUrls(); let last=null;
+  for(let t=0;t<tries;t++){
+    const u=urls[readIdx%urls.length];
+    try{
+      const r=await fetch(u,{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({jsonrpc:"2.0",id:1,method:"eth_call",params:[{to,data},"latest"]})});
+      const d=await r.json();
+      if(d&&"result" in d) return d.result;
+      last=new Error((d&&d.error&&d.error.message)||"rpc error");
+    }catch(e){last=e;}
+    readIdx++; await sleep(200);
+  }
+  log("⚠ RPC gagal ("+to.slice(0,10)+"…): "+((last&&last.message)||last));
+  return "0x";
+}
+async function rawEth(method,params,tries=3){
+  const urls=readUrls(); let last=null;
+  for(let t=0;t<tries;t++){
+    const u=urls[readIdx%urls.length];
+    try{
+      const r=await fetch(u,{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({jsonrpc:"2.0",id:1,method,params})});
+      const d=await r.json();
+      if(d&&"result" in d) return d.result;
+      last=new Error((d&&d.error&&d.error.message)||"rpc error");
+    }catch(e){last=e;}
+    readIdx++; await sleep(200);
+  }
+  log("⚠ RPC gagal ("+method+"): "+((last&&last.message)||last));
+  return null;
+}
+
+/* ==== wallet ==== */
+let signer=null, acct=null, browserProvider=null;
+async function connect(){
+  if(!window.ethereum){ alert("Tidak ada wallet browser terdeteksi.\nInstall MetaMask / Rabby / Coinbase Wallet, atau buka di browser wallet."); return; }
+  try{
+    browserProvider=new ethers.BrowserProvider(window.ethereum);
+    await browserProvider.send("eth_requestAccounts",[]);
+    const net=await browserProvider.getNetwork();
+    if(Number(net.chainId)!==CHAIN){
+      log("Bukan Base (chainId="+net.chainId+"). Meminta pindah…");
+      try{
+        await browserProvider.send("wallet_switchEthereumChain",[{chainId:CHAIN_HEX}]);
+      }catch(e){
+        await browserProvider.send("wallet_addEthereumChain",[{
+          chainId:CHAIN_HEX,chainName:"Base",
+          nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18},
+          rpcUrls:["https://mainnet.base.org"],blockExplorerUrls:["https://basescan.org"]
+        }]);
+      }
+    }
+    signer=await browserProvider.getSigner();
+    acct=await signer.getAddress();
+    const bal=await browserProvider.getBalance(acct);
+    $("wstat").innerHTML="✅ terhubung: <b>"+acct+"</b> · saldo <b>"+fmt(bal)+" ETH</b>";
+    log("Wallet "+acct+" · saldo "+fmt(bal)+" ETH");
+    window.ethereum.on&&window.ethereum.on("accountsChanged",a=>{acct=a&&a[0];log("Ganti akun → "+acct);});
+    await readAll();
+  }catch(e){ log("❌ connect gagal: "+(e.message||e)); }
+}
+
+/* ==== baca status tiap token ==== */
+let rows=[];
+async function tokenInfo(tk,owner){
+  const out={token:tk,err:null,hook:ZERO,locker:ZERO,feeLocker:"",haveWeth:0n,canSweep:false,balance:0n};
+  const w=Z(await rawCall(CLANKER_V4,S.deployInfo+pad(tk)));
+  if(w.length<3){ out.err="deploymentInfoForToken gagal"; return out; }
+  out.hook=A12("0x"+w[1]); out.locker=A12("0x"+w[2]);
+  if(out.locker.toLowerCase()===ZERO){ out.err="token bukan Clanker V4 (locker 0)"; return out; }
+  out.feeLocker=A12(await rawCall(out.locker,S.feeLockerOf));
+  if(out.feeLocker && out.feeLocker.toLowerCase()!==ZERO){
+    out.haveWeth=BI(await rawCall(out.feeLocker,S.feesToClaim+pad(owner)+pad(WETH)));
+  }
+  out.balance=BI(await rawCall(tk,S.balanceOf+pad(out.locker)));
+  // simulasi collectRewards dari akun terhubung / owner
+  const from=(acct||owner);
+  const d=await rawEth("eth_call",[{from,to:out.locker,data:S.collectRewards+pad(tk)},"latest"]).catch(()=>null);
+  out.canSweep=!!d;
+  return out;
+}
+async function readAll(){
+  const owner=$("owner").value.trim().toLowerCase();
+  if(!isAddr(owner)){ alert("Fee owner bukan alamat valid."); return; }
+  const toks=[...new Set(($("tokens").value||"").split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(isAddr))];
+  if(!toks.length){ alert("Belum ada token valid."); return; }
+  $("rstat").textContent="membaca "+toks.length+" token…";
+  rows=[];
+  for(const tk of toks){
+    const info=await tokenInfo(tk,owner);
+    rows.push(info);
+    log("• "+tk+" → locker="+(info.locker||"-")+" · WETH di locker="+fmt(info.haveWeth)+" · collectRewards="+(info.canSweep?"boleh":"TIDAK")+(info.err?" ("+info.err+")":""));
+  }
+  render();
+  $("rstat").textContent="selesai baca "+rows.length+" token.";
+}
+function claimableInLocker(owner){ return rows.reduce((s,r)=>s+r.haveWeth,0n); }
+
+function render(){
+  $("resCard").style.display="block";
+  const owner=$("owner").value.trim();
+  const total=claimableInLocker(owner);
+  $("summary").innerHTML="Fee owner <b>"+owner+"</b> · WETH siap di FeeLocker: <span class='big'>"+fmt(total).toFixed(10)+" ETH</span>";
+  $("list").innerHTML=rows.map((r,i)=>{
+    const ready=r.haveWeth>0n;
+    return '<div class="tblock"><div class="thead">'+
+      '<span class="tname">'+r.token+'</span>'+
+      ((ready?'<span class="badge b-gold">WETH SIAP '+fmt(r.haveWeth).toFixed(10)+'</span> ':'')+
+       (r.canSweep?'<span class="badge b-ok">collectRewards OK</span>':'<span class="badge b-mut">tidak bisa sweep</span>'))+
+      '<span class="badge '+(r.err?'b-err':'b-mut')+'">'+(r.err||'Clanker V4')+'</span>'+
+      '</div>'+
+      '<div class="kv">hook: <b class="mono">'+r.hook+'</b></div>'+
+      '<div class="kv">locker: <b class="mono">'+r.locker+'</b></div>'+
+      '<div class="kv">feeLocker: <b class="mono">'+(r.feeLocker||'-')+'</b></div>'+
+      '<div class="kv">WETH tercatat untuk Anda: <b>'+fmt(r.haveWeth).toFixed(10)+' ETH</b></div>'+
+      '<div class="actions">'+
+        '<button class="btn btn-gold" data-step1="'+i+'" '+(r.canSweep?'':'disabled')+'>1️⃣ collectRewards</button>'+
+        '<button class="btn btn-ok" data-step2="'+i+'" '+(ready?'':'disabled')+'>2️⃣ claim WETH</button>'+
+        '<button class="btn btn-ghost" data-auto="'+i+'" '+(r.canSweep?'':'disabled')+'>⚡ Auto (1+2)</button>'+
+      '</div></div>';
+  }).join("");
+}
+
+/* ==== kirim tx ==== */
+async function ensure(){
+  if(!signer){ alert("Connect wallet dulu."); return false; }
+  const net=await browserProvider.getNetwork();
+  if(Number(net.chainId)!==CHAIN){ alert("Wallet harus di jaringan Base."); return false; }
+  return true;
+}
+async function send(to,data,label){
+  if(!(await ensure())) return null;
+  try{
+    const bal=await browserProvider.getBalance(acct);
+    let gas=200000n;
+    try{ gas=await browserProvider.estimateGas({from:acct,to,data}); }catch(e){}
+    const fp=await browserProvider.getFeeData();
+    const cost=gas*(fp.maxFeePerGas||fp.gasPrice||0n);
+    log("→ "+label+" · gas≈"+gas.toString()+" · biaya≈"+fmt(cost)+" ETH · saldo "+fmt(bal)+" ETH");
+    if(bal<cost){ log("❌ saldo ETH tidak cukup untuk gas pada wallet ini. Pakai wallet lain yang ada gas (klaim tetap masuk ke fee owner)."); return null; }
+    const tx=await signer.sendTransaction({to,data});
+    log("⏳ terkirim: "+tx.hash+"  (menunggu konfirmasi…)");
+    const rc=await tx.wait();
+    log("✅ "+label+" sukses di blok "+rc.blockNumber+" · https://basescan.org/tx/"+tx.hash);
+    return tx.hash;
+  }catch(e){
+    log("❌ "+label+" GAGAL: "+((e&&(e.shortMessage||e.reason||e.message))||e));
+    return null;
+  }
+}
+async function step1(r){ return send(r.locker, S.collectRewards+pad(r.token), "collectRewards("+r.token.slice(0,10)+"…)"); }
+async function step2(owner){ return send(FEE_LOCKER, S.claim+pad(owner)+pad(WETH), "claim(WETH)"); }
+
+async function doStep(i,which){
+  const r=rows[i]; const owner=$("owner").value.trim().toLowerCase();
+  if(which===1){ if(await step1(r)){ await sleep(1500); await readAll(); } }
+  if(which===2){ if(await step2(owner)){ await sleep(1500); await readAll(); } }
+  if(which===0){
+    if(await step1(r)){ await sleep(1800); await readAll(); }
+    const back=rows.find(x=>x.token===r.token);
+    if(back && back.haveWeth>0n){ await step2(owner); await sleep(1500); await readAll(); }
+    else log("ℹ Setelah collectRewards, WETH belum tercatat. Coba klik 2️⃣ claim WETH manual beberapa detik lagi.");
+  }
+}
+async function claimAll(){
+  const owner=$("owner").value.trim().toLowerCase();
+  const todo=rows.filter(r=>r.canSweep);
+  if(!todo.length){ alert("Tidak ada token yang bisa di-sweep."); return; }
+  log("=== KLAIM SEMUA: "+todo.length+" token ===");
+  for(const r of todo){
+    log("— token "+r.token);
+    await step1(r);
+    await sleep(1800);
+  }
+  await readAll();
+  const total=claimableInLocker(owner);
+  if(total>0n) { await step2(owner); await sleep(1500); await readAll(); }
+  else log("ℹ Belum ada WETH tercatat setelah sweep. Tunggu beberapa detik lalu klik 'claim(feeOwner, WETH) saja'.");
+}
+
+/* ==== events ==== */
+$("connect").onclick=connect;
+$("refresh").onclick=()=>readAll().catch(e=>log("❌ "+(e.message||e)));
+$("addBase").onclick=async()=>{
+  if(!window.ethereum){alert("Tidak ada wallet browser.");return;}
+  try{
+    await window.ethereum.request({method:"wallet_addEthereumChain",params:[{
+      chainId:CHAIN_HEX,chainName:"Base",
+      nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18},
+      rpcUrls:["https://mainnet.base.org"],blockExplorerUrls:["https://basescan.org"]}]});
+    log("✔ jaringan Base ditambahkan.");
+  }catch(e){ log("❌ "+(e.message||e)); }
+};
+$("addCb").onclick=()=>{
+  const v=($("tokens").value||"").trim();
+  if(!v.includes("0xf96cd9e929805ada7857839d44bb814946df3b07"))
+    $("tokens").value=(v?v+"\n":"")+"0xf96cd9e929805ada7857839d44bb814946df3b07";
+};
+$("fromApi").onclick=async()=>{
+  const owner=$("owner").value.trim();
+  if(!isAddr(owner)){alert("Fee owner tidak valid.");return;}
+  $("rstat").textContent="mengambil dari Bankr API…";
+  try{
+    const r=await fetch("https://api.bankr.bot/public/doppler/creator-fees/"+owner+"?days=30");
+    const d=await r.json();
+    const cl=(d.tokens||[]).filter(t=>String(t.source||"").toLowerCase()==="clanker");
+    const all=(d.tokens||[]);
+    if(!all.length){ log("Bankr API: tidak ada token untuk wallet ini."); }
+    if(cl.length){
+      $("tokens").value=cl.map(t=>t.tokenAddress).join("\n");
+      log("✔ "+cl.length+" token Clanker dari Bankr API:");
+      cl.forEach(t=>log("   "+t.symbol+" · claimable "+JSON.stringify(t.claimable)));
+    } else log("ℹ Tidak ada token source=clanker. Bankr API melaporkan: "+all.map(t=>t.symbol+"("+t.source+")").join(", "));
+  }catch(e){ log("❌ Bankr API: "+(e.message||e)); }
+  $("rstat").textContent="siap.";
+};
+$("claimAll").onclick=()=>claimAll().catch(e=>log("❌ "+(e.message||e)));
+$("claimWeth").onclick=()=>step2($("owner").value.trim().toLowerCase()).then(()=>readAll()).catch(e=>log("❌ "+(e.message||e)));
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest("[data-step1],[data-step2],[data-auto]");
+  if(!b) return;
+  if(b.hasAttribute("data-step1")) doStep(+b.getAttribute("data-step1"),1);
+  else if(b.hasAttribute("data-step2")) doStep(+b.getAttribute("data-step2"),2);
+  else doStep(+b.getAttribute("data-auto"),0);
+});
+["owner","rpc","tokens"].forEach(id=>$(id).addEventListener("change",()=>{try{localStorage.setItem("c4_"+id,$(id).value);}catch(e){}}));
+["owner","rpc","tokens"].forEach(id=>{try{const v=localStorage.getItem("c4_"+id);if(v)$(id).value=v;}catch(e){}});
+
+provider=makeProvider(PUB[0]);
+log("siap. Connect wallet → pastikan di Base → klik baca ulang lalu klaim.");
+if(window.ethereum && window.ethereum.selectedAddress){
+  log("wallet terdeteksi, klik Connect Wallet.");
+}
+})();
+</script>
+</body>
+</html>
