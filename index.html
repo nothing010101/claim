@@ -281,6 +281,10 @@ async function alchemyRpc(alchemyKey, method, params){
     body: JSON.stringify({jsonrpc:'2.0', id:1, method, params})
   });
   const data = await res.json();
+  if(data.error){
+    console.error('Alchemy RPC error:', method, data.error);
+    throw new Error(data.error.message || 'Alchemy RPC error');
+  }
   return data.result;
 }
 
@@ -326,12 +330,18 @@ async function getBlockTimestamp(blockNumber, alchemyKey){
 }
 
 async function scanByCreatorAdmin(address, alchemyKey, jeda){
-  const padded = '0x' + '000000000000000000000000' + address.slice(2).toLowerCase();
-  const logs = await alchemyRpc(alchemyKey, 'eth_getLogs', [{
-    fromBlock: '0x0',
-    toBlock: 'latest',
-    topics: [TOKEN_CREATED_TOPIC, null, padded]
-  }]);
+  const padded = '0x' + address.slice(2).toLowerCase().padStart(64, '0');
+  let logs;
+  try{
+    logs = await alchemyRpc(alchemyKey, 'eth_getLogs', [{
+      fromBlock: '0x0',
+      toBlock: 'latest',
+      topics: [TOKEN_CREATED_TOPIC, null, padded]
+    }]);
+  } catch(e){
+    console.error('scanByCreatorAdmin gagal:', e.message);
+    return [];
+  }
   await sleep(jeda);
   if(!logs) return [];
 
@@ -463,10 +473,16 @@ els.scanBtn.addEventListener('click', async () => {
     els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: ${shortAddr(address)}...`;
     els.progressFill.style.width = `${Math.round((w/addresses.length)*100)}%`;
 
-    const tokens = await scanWallet(address, {etherscanKey, alchemyKey, jeda, force}, (done,total,tahap)=>{
-      if(tahap === 'creatorAdmin') els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek event TokenCreated (creatorAdmin)...`;
-      else if(total>0) els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek deploy tx ${done}/${total} (tx sender)`;
-    });
+    let tokens;
+    try{
+      tokens = await scanWallet(address, {etherscanKey, alchemyKey, jeda, force}, (done,total,tahap)=>{
+        if(tahap === 'creatorAdmin') els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek event TokenCreated (creatorAdmin)...`;
+        else if(total>0) els.status.textContent = `Scan wallet ${w+1}/${addresses.length}: cek deploy tx ${done}/${total} (tx sender)`;
+      });
+    } catch(e){
+      els.status.textContent = `Error pas scan ${shortAddr(address)}: ${e.message}`;
+      tokens = [];
+    }
 
     renderWallet(address, tokens);
   }
