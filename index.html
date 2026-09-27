@@ -212,7 +212,7 @@ textarea{resize:vertical;min-height:90px;line-height:1.5;}
 </div>
 
 <script>
-const DEPLOY_SELECTOR = '0x13d39311';
+const DEPLOY_SELECTORS = ['0xe9119a4e', '0x13d39311'];
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const ZERO_TOPIC = '0x0000000000000000000000000000000000000000000000000000000000000';
 const ZERO_TOPIC_FIXED = '0x0000000000000000000000000000000000000000000000000000000000000'.slice(0,66);
@@ -330,7 +330,8 @@ async function scanWallet(address, settings, onProgress){
   await sleep(settings.jeda);
 
   const deployTxs = txs.filter(tx =>
-    tx.input && tx.input.toLowerCase().startsWith(DEPLOY_SELECTOR) && tx.isError === '0'
+    tx.input && tx.isError === '0' &&
+    DEPLOY_SELECTORS.some(sel => tx.input.toLowerCase().startsWith(sel))
   );
 
   const tokens = [];
